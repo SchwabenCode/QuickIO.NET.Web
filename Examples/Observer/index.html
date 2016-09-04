@@ -1,0 +1,86 @@
+---
+layout: page
+title: QuickIO.NET Examples - Observer
+---
+
+<div class="post-item ">
+    <div class="post-title">
+        <h2>Observer</h2>
+    </div>
+    <div class="post-desc clearfix">
+        <p>
+            A QuickIO <a href="http://quickio.net/help/#type/QuickIOTransferObserver" target="_blank">observer</a> is a central contact point and allows the condition monitoring of QuickIO.NET <a ui-sref="Examples.Services">services</a> and QuickIO <a ui-sref="Examples.Jobs">jobs</a>.<br />
+            It is possible to create an own observer by inherit from <a href="http://quickio.net/help/#type/IQuickIOTransferObserver" target="_blank">IQuickIOTransferObserver</a> and <a href="http://quickio.net/help/#type/QuickIOTransferObserver" target="_blank">QuickIOTransferObserver</a> to monitor your own services and jobs at a central point and gather all information.
+        </p>
+        <p>
+            Another advantage of the QuickIO.NET observer architecture is the simple testing with
+            <a href="http://msdn.microsoft.com/en-us/library/ff650441.aspx" target="_blank">mock-objects</a>.
+        </p>
+        <p>Sample for an own observer with custom event</p>
+        <pre><code>
+/// &lt;summary&gt;
+/// My observer interface
+/// &lt;/summary&gt;
+public interface IMyExampleObserver : IQuickIOTransferObserver
+{
+    /// &lt;summary&gt;
+    /// Description of MyEvent
+    /// &lt;/summary&gt;
+    event MyExampleObserver.MyCustomEventHandler MyEvent;
+    /// &lt;summary&gt;
+    /// Fire &lt;see cref="MyExampleObserver.MyEvent" />
+    /// &lt;/summary&gt;
+    void OnMyEvent( );
+}
+/// &lt;summary&gt;
+/// my observer implementation
+/// &lt;/summary&gt;
+public class MyExampleObserver : QuickIOTransferObserver, IMyExampleObserver
+{
+    /// &lt;summary&gt;
+    /// Delegate for &lt;see cref="MyEvent" />
+    /// &lt;/summary&gt;
+    public delegate void MyCustomEventHandler( object sender, EventArgs e );
+    /// &lt;summary&gt;
+    /// Description of MyEvent
+    /// &lt;/summary&gt;
+    public event MyCustomEventHandler MyEvent;
+    /// &lt;summary&gt;
+    /// Fire &lt;see cref="MyEvent" />
+    /// &lt;/summary&gt;
+    public virtual void OnMyEvent( )
+    {
+        if ( MyEvent != null )
+        {
+            MyEvent( this, EventArgs.Empty );
+        }
+    }
+    /// &lt;summary&gt;
+    /// For example we want to log each worker creation, but  the keep the default behavior
+    /// &lt;/summary&gt;
+    public override void OnWorkerCreated( QuickIOTransferWorkerCreatedEventArgs args )
+    {
+        base.OnWorkerCreated( args );
+        QuickIOFile.AppendAllText( "Log_WorkerCreation.log", String.Format( "[{0}] NEW WORKER: {1} ", DateTime.Now, args.WorkerID ) );
+    }
+}
+/// &lt;summary&gt;
+/// Example usage of own observer
+/// &lt;/summary&gt;
+public class Program
+{
+    /// &lt;summary&gt;
+    /// Program implementation
+    /// &lt;/summary&gt;
+    public static void OwnObserverExample( )
+    {
+        var myObserver = new MyExampleObserver( );
+        var service1 = new QuickIOTransferBackgroundService( myObserver, workerCount: 1 );
+        var service2 = new QuickIOTransferBackgroundService( myObserver, workerCount: 4 );
+        var directoryCopyService = new QuickIOTransferDirectoryCopyService( myObserver, new QuickIODirectoryInfo( @"C:\temp" ), @"C:\temp_testtarget" );
+        // service usage here
+    }
+}
+</code></pre>
+    </div>
+</div>

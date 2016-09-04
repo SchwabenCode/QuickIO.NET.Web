@@ -1,0 +1,59 @@
+﻿html,
+body {
+  font-family: 'Droid Sans', sans serif;
+}
+.header_top {
+  position: fixed;
+}
+.cwrap {
+  position: relative;
+  top: 65px;
+  bottom: 35px;
+}
+ul.feature li {
+  font-size: 1.2em;
+  line-height: 1.5em;
+}
+.header {
+  background-image: url(../images/bg/bg-2.png);
+  max-height: 120px;
+}
+.container {
+  min-height: 100%;
+}
+.post-desc p {
+  color: #000 !important;
+  font-size: 1.2em;
+}
+.footbg {
+  background-image: url(../images/bg/bg-2.png);
+  width: 100%;
+  position: fixed;
+  height: 35px;
+}
+.comparisonpic,
+.nugetbox {
+  box-shadow: -3px -3px 1px #95887a, 3px 3px 1px #95887a;
+  border: 3px solid #f9daf0;
+}
+.nugetbox {
+  background-color: #383838;
+  padding: 10px 20px;
+}
+.nugetbox code {
+  color: #ffffff;
+  font-weight: 600;
+  font-family: 'Open Sans';
+  font-size: 20px;
+}
+.nugetbox code::-moz-selection {
+  background: #fff !important;
+  color: #383838;
+  text-shadow: none;
+}
+.nugetbox code::selection {
+  background: #fff !important;
+  color: #383838;
+  text-shadow: none;
+}
+/*# sourceMappingURL=custom.css.map */

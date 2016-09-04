@@ -1,0 +1,97 @@
+---
+layout: page
+title: QuickIO.NET Examples - Jobs
+---
+
+<div class="post-item ">
+    <div class="post-title">
+        <h2>Jobs</h2>
+    </div>
+    <div class="post-desc clearfix">
+        <p>
+            A job is a defined task (file copy, file create...), inhertis from <a href="http://quickio.net/help/#type/QuickIOTransferJob" target="_blank">QuickIOTransferJob</a> and has no dependencies.
+            <br />
+            However, he can pass his information (ex. progress) to an optional observer.
+        </p>
+        <pre><code>// For example the observer information behavior of file creation progress
+private void OnCopyProgress( Int64 totalBytes, UInt64 bytesTransfered )
+{
+    QuickIOTransferFileCopyProgressEventArgs args = null;
+    if ( Progress != null )
+    {
+        args = new QuickIOTransferFileCopyProgressEventArgs( this, Source, Target, totalBytes,
+                      bytesTransfered, ( DateTime ) TransferStarted );
+        Progress( this, args );
+    }
+    if ( Observer != null )
+    {
+        if ( args == null )
+        {
+            args = new QuickIOTransferFileCopyProgressEventArgs( this, Source, Target, totalBytes, 
+                           bytesTransfered, ( DateTime ) TransferStarted );
+        }
+        Observer.OnFileCopyProgress( args );
+    }
+}
+       </code></pre>
+    </div>
+    <hr />
+    <div class="post-desc clearfix">
+        <p>
+            <a href="http://quickio.net/help/#type/QuickIOTransferJob" target="_blank">QuickIOTransferJob</a> requires the custom implementation of <a href="http://quickio.net/help/#type/QuickIOTransferJob?Implementation3" target="_blank">Implementation-Method</a>, in which the logic of the task must be implemented.
+            The action is performed using the method <a href="http://quickio.net/help/#type/QuickIOTransferJob?Run2" target="_blank">Run</a>; starting with the .NET 4.0 the method <a href="http://quickio.net/help/#type/QuickIOTransferJob?RunAsync2" target="_blank">RunAsync</a> is available, too.<br />
+        </p>
+        <pre><code>// For example the job implementation of CreateDirectory       
+protected override void Implementation( )
+{
+    OnDirectoryCreating( );
+    if ( !QuickIODirectory.Exists( DirectoryToCreatePath ) )
+    {
+        QuickIODirectory.Create( DirectoryToCreatePath, true );
+    }
+    OnDirectoryCreated( );
+}
+       </code></pre>
+    </div>
+    <hr />
+    <div class="post-desc clearfix">
+        <p>
+            <a href="http://quickio.net/help/#type/QuickIOTransferJob?Run2" target="_blank">Run</a> passes the status of "Start", "End" and "Error" to the respective event interfaces, which can be overridden in your own job classes.
+        </p>
+        <pre><code>// Implementation of Run()
+public void Run( )
+{
+    var started = DateTime.Now;
+    OnRun( started );
+    try
+    {
+        Implementation( );
+    }
+    catch ( Exception e )
+    {
+        OnError( e );
+        throw;
+    }
+    OnEnd( started, DateTime.Now );
+}
+        </code></pre>
+        <br />
+
+    </div>
+</div>
+
+<div class="post-item ">
+    <div class="post-desc clearfix">
+        <p>
+            For more information please see the appropriate documentation or - if necessary - the <a ui-sref="Source">source code</a>.
+        </p>
+        <p>
+            I've spent really much time in the detailed documentation of QuickIO.NET and will continue.<br />
+            Please read the <a href="http://quickio.net/help/" target="_blank">documentation</a> before you opened a new topic in the dicusccion area.<br />
+        </p>
+        <p>
+            Thank you very much.
+        </p>
+
+    </div>
+</div>

@@ -1,0 +1,289 @@
+---
+layout: page
+title: QuickIO.NET Examples
+---
+
+<div class="post-item ">
+    <div class="post-title"><h2>Examples - Part #1</h2></div>
+    <div class="post-desc clearfix">
+        <h3>Enumerate folder contents</h3>
+        <pre><code>// Get subfolders
+IEnumerable< QuickIODirectoryInfo > allSubFolders = 
+                   QuickIODirectory.EnumerateDirectories( @"C:\temp\QuickIO", SearchOption.AllDirectories );
+foreach ( QuickIODirectoryInfo directoryInfo in allSubFolders )
+{     
+   Console.WriteLine( "Directory found: {0} Readonly: {1}", directoryInfo.FullName, directoryInfo.IsReadOnly );
+}
+                </code></pre>
+        <br />
+        <pre><code>// Get subfiles
+IEnumerable< QuickIOFileInfo > allSubFiles = QuickIODirectory.EnumerateFiles( @"C:\temp\QuickIO", SearchOption.AllDirectories );
+foreach ( QuickIOFileInfo fileInfo in allSubFiles )
+{     
+   Console.WriteLine( "File found: {0} Readonly: {1}", fileInfo.FullName, fileInfo.IsReadOnly );
+}
+            </code></pre>
+        <br />
+        <pre><code>// Get all with one call
+IEnumerable< KeyValuePair< QuickIOPathInfo, QuickIOFileSystemEntryType > > allSubEntries = QuickIODirectory.EnumerateFileSystemEntries( @"C:\temp\QuickIO", SearchOption.AllDirectories ); 
+foreach ( KeyValuePair< QuickIOPathInfo, QuickIOFileSystemEntryType > subEntry in allSubEntries )
+{     
+   var pathInfo = subEntry.Key;     
+   var type = subEntry.Value;     
+    Console.WriteLine( "Entry found: {0} Readonly: {1}", pathInfo.FullName, type );
+}
+            </code></pre>
+        <br />
+        <h5>More examples are on the <a href="http://quickio.codeplex.com/documentation" target="_blank">CodePlex QuickIO.NET project site</a> or available in the <a href="http://quickIO.NET/help" target="_blank">official online help</a>.</h5>
+    </div>
+</div>
+
+<div class="post-item ">
+
+    <div class="post-title"><h2>Examples - Part #2</h2></div>
+
+    <div class="post-desc clearfix">
+
+        <h3>Permanent watching service for file copy operations with progress information</h3>
+        <pre><code>// Example of QuickIO Background Transfer service
+ 
+class Program
+{
+    const string dropDirectory = @"C:\transfer_test\dropfolder";
+    const string pictureFolder = @"C:\transfer_test\pictures";
+    const string movieFolder = @"C:\transfer_test\movies";
+ 
+ 
+    protected static QuickIOTransferBackgroundService TransferBackgroundService = new QuickIOTransferBackgroundService( workerCount: 2, maxFileRetry: 5 );
+    protected static FileSystemWatcher PictureWatcher = new FileSystemWatcher( dropDirectory, "*.png" );
+    protected static FileSystemWatcher MovieWatcher = new FileSystemWatcher( dropDirectory, "*.mp4" );
+ 
+    static void Main( string[ ] args )
+    {
+        // events to watch on filesystem
+        PictureWatcher.Created += OnCreated_Picture;
+        MovieWatcher.Created += OnCreated_MovieFile;
+ 
+        // Event definitions
+        TransferBackgroundService.JobEnqueued += OnJobEnqueued;
+        TransferBackgroundService.JobDequeued += OnJobDequeued;
+        TransferBackgroundService.JobRequeued += OnJobRequeued;
+        TransferBackgroundService.WorkerPickedJob += OnServiceWorkerPickedJob;
+ 
+        TransferBackgroundService.WorkerCreated += OnServiceWorkerCreated;
+        TransferBackgroundService.WorkerStarted += OnServiceWorkerStarted;
+        TransferBackgroundService.WorkerPickedJob += OnServiceWorkerPickedJob;
+ 
+        TransferBackgroundService.FileCopyStarted += OnFileCopyStarted;
+        TransferBackgroundService.FileCopyProgress += OnFileCopyProgress;
+        TransferBackgroundService.FileCopyFinished += OnFileCopyFinished;
+ 
+        // start service, if autostart is false
+        TransferBackgroundService.StartService( );
+ 
+        Console.WriteLine( "Service is running." );
+        Console.ReadKey( ); // wait to finish, blocks here
+ 
+        // Ends on key input
+    }
+ 
+    /// &lt;summary&gt;
+    /// worker started
+    /// &lt;/summary&gt;
+    private static void OnServiceWorkerStarted( object sender, QuickIOTransferWorkerStartedEventArgs e )
+    {
+        Console.WriteLine( "[!] Worker Started. ID: " + e.WorkerID );
+    }
+ 
+    /// &lt;summary&gt;
+    /// new worker
+    /// &lt;/summary&gt;
+    static void OnServiceWorkerCreated( object sender, QuickIOTransferWorkerCreatedEventArgs e )
+    {
+        Console.WriteLine( "[!] New Worker. ID: " + e.WorkerID );
+    }
+ 
+    /// &lt;summary&gt;
+    /// worker catched a job
+    /// &lt;/summary&gt;
+    static void OnServiceWorkerPickedJob( object sender, QuickIOTransferWorkerPickedJobEventArgs e )
+    {
+        Console.WriteLine( "[!] Worker ID# " + e.WorkerID + " picked job: " + e.GetType( ) );
+    }
+ 
+    /// &lt;summary&gt;
+    /// job was broken by an exception, but requred
+    /// &lt;/summary&gt;
+    static void OnJobRequeued( object sender, QuickIOTransferJobRequeuedArgs e )
+    {
+        Console.WriteLine( "[JOB REQUEUED] Try: #" + e.Job.CurrentRetryCount + " - " + e.Job.GetType( ) + " failed: " + e.Exception.Message );
+    }
+ 
+    /// &lt;summary&gt;
+    /// Report of job was taken from queue
+    /// &lt;/summary&gt;
+    static void OnJobDequeued( object sender, QuickIOTransferJobDequeuedArgs e )
+    {
+        Console.WriteLine( "[JOB DEQUEUED] " + e.Job.GetType( ) );
+    }
+ 
+    /// &lt;summary&gt;
+    /// Report for new jobs
+    /// &lt;/summary&gt;
+    static void OnJobEnqueued( object sender, QuickIOTransferJobEnqueuedArgs e )
+    {
+        Console.WriteLine( "[NEW JOB] " + e.Job.GetType( ) );
+    }
+ 
+    /// &lt;summary&gt;
+    /// Progress Report
+    /// &lt;/summary&gt;
+    static void OnFileCopyStarted( object sender, QuickIOTransferFileCopyStartedArgs args )
+    {
+        Console.WriteLine( ">>>>>> STARTED " + args.SourcePath + " to " + args.TargetPath );
+    }
+ 
+    /// &lt;summary&gt;
+    /// Progress Report
+    /// &lt;/summary&gt;
+    static void OnFileCopyFinished( object sender, QuickIOTransferFileCopyFinishedArgs args )
+    {
+        Console.WriteLine( ">>>>>> FINISHED " + args.SourcePath + " to " + args.TargetPath + " - MB/s: " + ( args.BytesPerSecond / 1024.0 / 1024.0 ).ToString( "0.0" ) );
+    }
+    /// &lt;summary&gt;
+    /// Progress Report
+    /// &lt;/summary&gt;
+    static void OnFileCopyProgress( object sender, QuickIOTransferFileCopyProgressArgs args )
+    {
+        Console.WriteLine( "Transfering " + args.SourcePath + " to " + args.TargetPath + " - %: " + args.Percentage + " MB/s: " + ( args.BytesPerSecond / 1024.0 / 1024.0 ).ToString( "0.0" ) );
+    }
+ 
+    /// &lt;summary&gt;
+    /// Copy movie file from drop folder to internal movie folder
+    /// &lt;/summary&gt;
+    static void OnCreated_MovieFile( object sender, FileSystemEventArgs e )
+    {
+        var queueItem = new QuickIOTransferFileCopyJob( e.FullPath, movieFolder, overwrite: true );
+        TransferBackgroundService.Add( queueItem );
+    }
+ 
+    /// &lt;summary&gt;
+    /// Copy picture file from drop folder to internal picture folder
+    /// &lt;/summary&gt;
+    static void OnCreated_Picture( object sender, FileSystemEventArgs e )
+    {
+        var queueItem = new QuickIOTransferFileCopyJob( e.FullPath, pictureFolder, overwrite: true, parentExistanceCheck: false );
+        TransferBackgroundService.Add( queueItem );
+    }
+}
+            </code></pre>
+        <br />
+    </div>
+</div>
+<div class="post-item ">
+    <div class="post-title"><h2>Examples - Part #3</h2></div>
+    <div class="post-desc clearfix">
+
+        <h3>Copy directory with monitoring and progress information</h3>
+        <pre><code>
+static void Main( string[ ] args )
+{
+    const string sourceDirectory = @"C:\transfer_test\source";
+    const string targetDirectory = @"C:\transfer_test\to";
+    // With observer
+    IQuickIOTransferObserver observer = new QuickIOTransferObserver( );
+    var service = new QuickIOTransferDirectoryCopyService( observer, new QuickIODirectoryInfo( sourceDirectory ), targetDirectory, threadCount: 1, retryCount: 3, searchOption: SearchOption.AllDirectories, overwrite: true );
+    // or without overload, to use default internal observer
+    // var service = new QuickIOTransferDirectoryCopyService( new QuickIODirectoryInfo( sourceDirectory ), targetDirectory, threadCount: 1, retryCount: 3, searchOption: SearchOption.AllDirectories, overwrite: true );
+    //  Progress information
+    service.Observer.DirectoryCreationError += ObserverOnDirectoryCreationError;
+    service.Observer.FileCopyStarted += OnFileCopyStarted;
+    service.Observer.FileCopyProgress += OnFileCopyProgress;
+    service.Observer.FileCopyFinished += OnFileCopyFinished;
+    service.Observer.FileCopyError += ObserverOnFileCopyError;
+    // Same as (observer events are called first!):
+    service.FileCopyStarted += OnFileCopyStarted;
+    service.FileCopyProgress += OnFileCopyProgress;
+    service.FileCopyFinished += OnFileCopyFinished;
+    service.FileCopyError += ObserverOnFileCopyError;
+    // Start progress
+    service.Start( ); // Blocks thread until finished
+    Console.WriteLine( "Finished" );
+    Console.ReadKey( );
+}
+private static void ObserverOnDirectoryCreationError( object sender, QuickIOTransferDirectoryCreationErrorEventArgs e )
+{
+    Console.WriteLine( "Error: Dir create '" + e.TargetPath + "' failed: " + e.Exception.Message );
+}
+private static void ObserverOnFileCopyError( object sender, QuickIOTransferFileCopyErrorEventArgs e )
+{
+    Console.WriteLine( "Error: " + e.SourcePath + " to " + e.TargetPath + ": " + e.Exception.Message );
+}
+private static void OnFileCopyStarted( object sender, QuickIOTransferFileCopyStartedEventArgs e )
+{
+    Console.WriteLine( "Started: " + e.SourcePath + " to " + e.TargetPath + " (Bytes: " + e.TotalBytes + ")" );
+}
+private static void OnFileCopyFinished( object sender, QuickIOTransferFileCopyFinishedEventArgs e )
+{
+    Console.WriteLine( "Finished: " + e.SourcePath + " - MB/s: " + ( e.BytesPerSecond / 1024.0 / 1024.0 ).ToString( "0.0" ) );
+}
+private static void OnFileCopyProgress( object sender, QuickIOTransferFileCopyProgressEventArgs e )
+{
+    Console.WriteLine( "Progress: " + e.SourcePath + " - %: " + e.Percentage + " MB/s: " + ( e.BytesPerSecond / 1024.0 / 1024.0 ).ToString( "0.0" ) );
+}
+            </code></pre>
+        <br />
+    </div>
+</div>
+<div class="post-item ">
+    <div class="post-title"><h2>Examples - Part #4</h2></div>
+    <div class="post-desc clearfix">
+        <h3>Copy file(s) with monitoring and progress information</h3>
+        <pre><code>        /// class Program
+{
+    static void Main( string[ ] args )
+    {
+       const string sourceDirectory = @"C:\transfer_test\source";
+       const string targetDirectory = @"C:\transfer_test\to";
+       // search file
+       var file = new QuickIOFileInfo( "file" );
+       var service = new QuickIOTransferFileCopyService( file, targetDirectory, threadCount: 1, retryCount: 3, overwrite: true );
+       
+       //  Progress information
+       service.Observer.FileCopyStarted += OnFileCopyStarted;
+       service.Observer.FileCopyProgress += OnFileCopyProgress;
+       service.Observer.FileCopyFinished += OnFileCopyFinished;
+       service.Observer.FileCopyError += ObserverOnFileCopyError;
+       // Same as (observer events are called first!):
+       //service.FileCopyStarted += OnFileCopyStarted;
+       //service.FileCopyProgress += OnFileCopyProgress;
+       //service.FileCopyFinished += OnFileCopyFinished;
+       //service.FileCopyError += ObserverOnFileCopyError;
+       
+       // Start progress
+       service.Start( ); // Blocks thread until finished
+       
+       Console.WriteLine( "Finished" );
+       Console.ReadKey( );
+    }
+    private static void ObserverOnFileCopyError( object sender, QuickIOTransferFileCopyErrorEventArgs e )
+    {
+       Console.WriteLine( "Error: " + e.SourcePath + " to " + e.TargetPath + ": " + e.Exception.Message );
+    }
+    private static void OnFileCopyStarted( object sender, QuickIOTransferFileCopyStartedEventArgs e )
+    {
+       Console.WriteLine( "Started: " + e.SourcePath + " to " + e.TargetPath + " (Bytes: " + e.TotalBytes + ")" );
+    }
+    private static void OnFileCopyFinished( object sender, QuickIOTransferFileCopyFinishedEventArgs e )
+    {
+       Console.WriteLine( "Finished: " + e.SourcePath + " - MB/s: " + ( e.BytesPerSecond / 1024.0 / 1024.0 ).ToString( "0.0" ) );
+    }
+    private static void OnFileCopyProgress( object sender, QuickIOTransferFileCopyProgressEventArgs e )
+    {
+       Console.WriteLine( "Progress: " + e.SourcePath + " - %: " + e.Percentage + " MB/s: " + ( e.BytesPerSecond / 1024.0 / 1024.0 ).ToString( "0.0" ) );
+    }
+}
+            </code></pre>
+        <br />
+    </div>
+</div>
